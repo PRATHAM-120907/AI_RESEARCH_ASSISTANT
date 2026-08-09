@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070C" />
+  <title>Pratham \  — a living interface for your prompts</title>
+  <meta name="description" content="Speak to the world. A kinetic prompt console built around a breathing planet." />
+
+  <!-- Fonts: editorial serif + technical sans + mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300;1,9..144,500&family=Space+Grotesk:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body data-state="idle">
+  <!-- Grain + vignette layers (fixed, non-interactive) -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- Custom cursor -->
+  <div class="cursor" aria-hidden="true">
+    <span class="cursor-dot"></span>
+    <span class="cursor-ring"></span>
+  </div>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" data-testid="site-nav">
+    <a href="#top" class="nav__mono" data-testid="nav-logo" aria-label="Terra Kinesis home">
+      <span class="mono-mark">◐</span>
+      <span class="mono-word">PRC<em>/</em>Pratham</span>
+    </a>
+
+    <nav class="nav__links">
+      <a href="#console" data-hover data-testid="nav-console">Console</a>
+      <a href="#manifesto" data-hover data-testid="nav-manifesto">Manifesto</a>
+      <a href="#atlas" data-hover data-testid="nav-atlas">Atlas</a>
+      <a href="#index" data-hover data-testid="nav-index">Index</a>
+    </nav>
+
+    <div class="nav__status" data-testid="nav-status">
+      <span class="status-dot" data-testid="status-dot"></span>
+      <span class="status-label" data-testid="status-label">Listening — idle</span>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="top" class="hero">
+    <!-- WebGL canvas host: globe + starfield + shooting stars live here -->
+    <div class="stage">
+      <canvas id="scene" data-testid="globe-canvas" aria-hidden="true"></canvas>
+    </div>
+
+    <div class="hero__grid">
+      <div class="hero__meta">
+        <span class="tag" data-testid="hero-tag">
+          <span class="tag__pulse"></span>
+          <span>N° 001 — a living interface</span>
+        </span>
+      </div>
+
+      <h1 class="hero__title" data-testid="hero-title" aria-label="We render worlds in motion">
+        <span class="line"><span class="line__inner">We&nbsp;render</span></span>
+        <span class="line"><span class="line__inner"><em>worlds</em>&nbsp;in&nbsp;motion,</span></span>
+        <span class="line"><span class="line__inner">shaped by</span></span>
+        <span class="line"><span class="line__inner">the words&nbsp;<em>you</em>&nbsp;speak.</span></span>
+      </h1>
+
+      <div class="hero__foot">
+        <p class="hero__lede">
+          A prompt console with a heartbeat. Type — and the planet warms; a blue-green aurora
+          bends into copper, molten and awake.
+        </p>
+        <a href="#console" class="cta" data-hover data-testid="hero-cta">
+          <span>Enter the console</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
+      </div>
+
+      <div class="hero__ticker" aria-hidden="true">
+        <span>52.3719° N</span><span>·</span>
+        <span>4.8843° E</span><span>·</span>
+        <span data-testid="hero-clock" id="hero-clock">--:--:-- UTC</span><span>·</span>
+        <span>ATLAS v0.9</span>
+      </div>
+    </div>
+
+    <div class="scroll-hint" aria-hidden="true">
+      <span>Scroll</span>
+      <span class="scroll-hint__bar"><i></i></span>
+    </div>
+  </section>
+
+  <!-- ============ CONSOLE ============ -->
+  <section id="console" class="console" data-testid="console-section">
+    <div class="console__header">
+      <div class="chapter">
+        <span class="chapter__num">01</span>
+        <span class="chapter__label">The console</span>
+      </div>
+      <h2 class="section-title">
+        Whisper an&nbsp;<em>instruction</em>.<br />
+        Watch the atmosphere respond.
+      </h2>
+    </div>
+
+    <form class="prompt" id="prompt" data-testid="prompt-form" autocomplete="off">
+      <div class="prompt__frame">
+        <div class="prompt__row prompt__row--top">
+          <span class="prompt__badge" data-testid="prompt-badge">
+            <i class="badge-dot"></i>PROMPT&nbsp;·&nbsp;LIVE
+          </span>
+          <span class="prompt__count" data-testid="prompt-count">0 / 1200</span>
+        </div>
+
+        <label for="prompt-input" class="sr">Prompt</label>
+        <textarea
+          id="prompt-input"
+          name="prompt"
+          class="prompt__input"
+          rows="3"
+          maxlength="1200"
+          placeholder="Describe a world. e.g. 'a copper monsoon over a glass city…'"
+          data-testid="prompt-input"
+        ></textarea>
+
+        <div class="prompt__row prompt__row--bottom">
+          <div class="prompt__tools">
+            <!-- File upload -->
+            <label class="upload" data-hover data-testid="upload-label">
+              <input
+                type="file"
+                id="prompt-file"
+                class="upload__input"
+                multiple
+                accept="image/*,.pdf,.txt,.md,.json,.csv"
+                data-testid="upload-input"
+              />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 01-7.78-7.78l9.19-9.19a3.67 3.67 0 015.19 5.19L9.66 17.66a1.83 1.83 0 01-2.59-2.59l8.49-8.49" />
+              </svg>
+              <span>Attach</span>
+            </label>
+
+            <button type="button" class="chip" data-preset="aurora" data-hover data-testid="preset-aurora">
+              <span class="chip__mark"></span>aurora
+            </button>
+            <button type="button" class="chip" data-preset="magma" data-hover data-testid="preset-magma">
+              <span class="chip__mark chip__mark--warm"></span>magma
+            </button>
+            <button type="button" class="chip" data-preset="glacier" data-hover data-testid="preset-glacier">
+              <span class="chip__mark chip__mark--cool"></span>glacier
+            </button>
+          </div>
+
+          <button type="submit" class="send" data-hover data-testid="prompt-submit">
+            <span>Transmit</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <ul class="files" id="file-list" data-testid="file-list" aria-live="polite"></ul>
+    </form>
+
+    <p class="console__caption">
+      <span>Fig. 01</span>
+      <em>Aura</em> — a Fresnel halo whose hue tracks input cadence. Cold spectrum at rest,
+      warm spectrum under sustained input.
+    </p>
+  </section>
+
+  <!-- ============ MANIFESTO ============ -->
+  <section id="manifesto" class="manifesto" data-testid="manifesto-section">
+    <div class="chapter">
+      <span class="chapter__num">02</span>
+      <span class="chapter__label">Manifesto</span>
+    </div>
+
+    <ol class="manifesto__list">
+      <li class="tenet" data-reveal>
+        <span class="tenet__num">I.</span>
+        <h3 class="tenet__title">Interfaces should&nbsp;<em>breathe</em>.</h3>
+        <p class="tenet__body">
+          Every input is a small weather system. Cursors, cursored planets, cursored oceans —
+          they should acknowledge you before your sentence ends.
+        </p>
+      </li>
+      <li class="tenet" data-reveal>
+        <span class="tenet__num">II.</span>
+        <h3 class="tenet__title">Colour is&nbsp;<em>temperature</em>.</h3>
+        <p class="tenet__body">
+          Blue and green are patience. Copper and orange are urgency. The palette is a
+          feedback loop, not a decision.
+        </p>
+      </li>
+      <li class="tenet" data-reveal>
+        <span class="tenet__num">III.</span>
+        <h3 class="tenet__title">Motion is&nbsp;<em>meaning</em>.</h3>
+        <p class="tenet__body">
+          If a pixel moves without a reason, remove it. If a pixel refuses to move when it
+          should, that is a bug, not a feature.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ MARQUEE ============ -->
+  <section class="marquee" aria-hidden="true" data-testid="marquee">
+    <div class="marquee__track">
+      <span>Terra<em>/</em>Kinesis</span><span class="marquee__dot">✷</span>
+      <span>a living&nbsp;interface</span><span class="marquee__dot">✷</span>
+      <span>rendered in&nbsp;real time</span><span class="marquee__dot">✷</span>
+      <span>Terra<em>/</em>Kinesis</span><span class="marquee__dot">✷</span>
+      <span>Amsterdam · Tokyo · Nairobi</span><span class="marquee__dot">✷</span>
+      <span>MMXXV</span><span class="marquee__dot">✷</span>
+    </div>
+    <div class="marquee__track" aria-hidden="true">
+      <span>Terra<em>/</em>Kinesis</span><span class="marquee__dot">✷</span>
+      <span>a living&nbsp;interface</span><span class="marquee__dot">✷</span>
+      <span>rendered in&nbsp;real time</span><span class="marquee__dot">✷</span>
+      <span>Terra<em>/</em>Kinesis</span><span class="marquee__dot">✷</span>
+      <span>Amsterdam · Tokyo · Nairobi</span><span class="marquee__dot">✷</span>
+      <span>MMXXV</span><span class="marquee__dot">✷</span>
+    </div>
+  </section>
+
+  <!-- ============ ATLAS (photography spotlight) ============ -->
+  <section id="atlas" class="atlas" data-testid="atlas-section">
+    <div class="chapter">
+      <span class="chapter__num">03</span>
+      <span class="chapter__label">Atlas</span>
+    </div>
+
+    <div class="atlas__grid">
+      <figure class="plate plate--tall" data-reveal>
+        <div class="plate__frame">
+          <img
+            src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"
+            alt="Earth from orbit at night"
+            loading="lazy"
+          />
+        </div>
+        <figcaption>
+          <span>Pl. 001</span>
+          <em>Nocturne</em> — the world at 04:12 UTC.
+        </figcaption>
+      </figure>
+
+      <figure class="plate" data-reveal>
+        <div class="plate__frame">
+          <img
+            src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1400&q=80"
+            alt="Deep space nebula in cool blue"
+            loading="lazy"
+          />
+        </div>
+        <figcaption>
+          <span>Pl. 002</span>
+          <em>Aurora</em> — the resting palette.
+        </figcaption>
+      </figure>
+
+      <figure class="plate plate--wide" data-reveal>
+        <div class="plate__frame">
+          <img
+            src="https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?auto=format&fit=crop&w=1600&q=80"
+            alt="Warm nebula tones, copper and amber"
+            loading="lazy"
+          />
+        </div>
+        <figcaption>
+          <span>Pl. 003</span>
+          <em>Magma</em> — the active palette.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER / INDEX ============ -->
+  <footer id="index" class="foot" data-testid="footer">
+    <div class="foot__mark">
+      <span class="mono-mark">◐</span>
+      <span>Terra<em>/</em>Kinesis</span>
+    </div>
+
+    <div class="foot__cols">
+      <div>
+        <span class="foot__label">Origin</span>
+        <p>Built to sit inside a Flask app. Drop it in <code>templates/</code> and <code>static/</code>.</p>
+      </div>
+      <div>
+        <span class="foot__label">Endpoints</span>
+        <p><code>POST /prompt</code> · <code>POST /upload</code> — wire when ready.</p>
+      </div>
+      <div>
+        <span class="foot__label">Type</span>
+        <p>Fraunces · Space&nbsp;Grotesk · JetBrains&nbsp;Mono.</p>
+      </div>
+    </div>
+
+    <p class="foot__legal">
+      <span>© MMXXV — Terra/Kinesis</span>
+      <span>All motion, no filler.</span>
+    </p>
+  </footer>
+
+  <!-- ============ Import map: keep three + addons pinned ============ -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <!-- Smooth momentum scroll (Lenis, vanilla UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+  <!-- GSAP (vanilla equivalent of framer-motion for reveals + micro-interactions) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Globe + starfield -->
+  <script type="module" src="{{ url_for('static', filename='js/globe.js') }}"></script>
+  <!-- UI motion + prompt handling -->
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

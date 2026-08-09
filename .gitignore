@@ -1,0 +1,27 @@
+# Python virtual environment
+venv/
+Lib/
+Scripts/
+Include/
+share/
+etc/
+pyvenv.cfg
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Uploaded user files
+uploads/*
+
+# VS Code
+.vscode/
+
+# Git
+.git/
+
+# Docker
+*.log
