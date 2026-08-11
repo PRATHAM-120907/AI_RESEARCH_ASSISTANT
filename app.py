@@ -1,97 +1,146 @@
 import os
-from flask import Flask , render_template , request , jsonify
+
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+
 from rag.loader import load_pdf
 from rag.splitter import split_documents
 from rag.embeddings import get_embedding_model
-from rag.vector_store import create_vector_store
-from rag.retriever import get_retriever
+from rag.vector_store import create_vector_store, get_retriever_from_store
 from rag.chain import ask_question
 
+
 load_dotenv()
-# Global retriever
-retriever  = None
-
-
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER , exist_ok=True)
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 
-@app.route('/')
+vector_store = None
+
+
+@app.route("/")
 def home():
-     return render_template('index.html')
+    return render_template("index.html")
+
 
 @app.route("/upload", methods=["POST"])
 def upload_pdf():
 
-    global retriever
+    global vector_store
 
     if "pdf" not in request.files:
-        return jsonify({"error": "No PDF uploaded"}), 400
+        return jsonify({
+            "success": False,
+            "error": "No PDF uploaded"
+        }), 400
 
     file = request.files["pdf"]
 
     if file.filename == "":
-        return jsonify({"error": "No file selected"}), 400
+        return jsonify({
+            "success": False,
+            "error": "No file selected"
+        }), 400
 
     save_path = os.path.join(
         app.config["UPLOAD_FOLDER"],
         file.filename
     )
 
-    file.save(save_path)
+    try:
 
-    print(f"\nUploading: {file.filename}")
+        file.save(save_path)
 
-    # Load PDF
-    documents = load_pdf(save_path)
+        print(f"\nUploading: {file.filename}")
 
-    # Split
-    chunks = split_documents(documents)
+        print("Loading PDF...")
+        documents = load_pdf(save_path)
 
-    # Embeddings
-    embedding_model = get_embedding_model()
+        print("Splitting document...")
+        chunks = split_documents(documents)
 
-    # Vector Store
-    vector_store = create_vector_store(
-        chunks,
-        embedding_model
-    )
+        print("Creating embeddings...")
+        embedding_model = get_embedding_model()
 
-    # Retriever
-    retriever = get_retriever(vector_store)
+        print("Creating Qdrant vector store...")
+        vector_store = create_vector_store(
+            chunks,
+            embedding_model
+        )
 
-    return jsonify({
-        "success": True,
-        "message": "PDF Indexed Successfully"
-    })
+        print("PDF indexed successfully!")
+
+        return jsonify({
+            "success": True,
+            "message": "PDF indexed successfully"
+        }), 200
+
+    except Exception as e:
+
+        print("ERROR while indexing PDF:")
+        print(e)
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
-
-
-@app.route("/ask" , methods=["POST"])
+@app.route("/ask", methods=["POST"])
 def ask():
-    global retriever
-    
-    if retriever is None:
-        return jsonify({"Success":False, "error":"Upload a PDF first"}), 400
-    
-    data = request.get_json()
-    
-    question = data.get("question")
+
+    global vector_store
+
+    if vector_store is None:
+        return jsonify({
+            "success": False,
+            "error": "Upload a PDF first"
+        }), 400
+
+    data = request.get_json(silent=True) or {}
+
+    question = data.get("question", "").strip()
+
     if not question:
-        return jsonify({"success":False , "error":"Qestion is required to process"}), 400
-    
-    
-    answer = ask_question(retriever , question)
-    return jsonify({"success":True , "answer":answer}),200
-    
+        return jsonify({
+            "success": False,
+            "error": "Question is required"
+        }), 400
 
-    
+    try:
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=5000,debug=False)
+        retriever = get_retriever_from_store(vector_store)
+
+        answer = ask_question(
+            retriever,
+            question
+        )
+
+        return jsonify({
+            "success": True,
+            "answer": answer
+        }), 200
+
+    except Exception as e:
+
+        print("ERROR while answering:")
+        print(e)
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False
+    )

@@ -181,41 +181,61 @@ form?.addEventListener("submit", async (e) => {
 
     e.preventDefault();
 
+    const question = input?.value.trim();
+
+    if (!question) {
+        alert("Please enter a question.");
+        return;
+    }
+
     stage()?.burst();
-
-    const question = input.value.trim();
-
-    if (!question) return;
 
     try {
 
         const response = await fetch("/ask", {
-
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 question: question
             })
-
         });
 
         const result = await response.json();
 
-        console.log(result);
+        console.log("ASK RESPONSE:", result);
 
-        alert(result.answer);
+        // Backend returned an error
+        if (!response.ok || result.success === false) {
 
-    }
+            alert(
+                result.error ||
+                "Something went wrong while processing your question."
+            );
 
-    catch (err) {
+            return;
+        }
 
-        console.error(err);
-        alert("Server Error");
+        // Successful answer
+        if (result.answer) {
 
+            alert(result.answer);
+
+        } else {
+
+            alert("The server returned no answer.");
+
+            console.log("Unexpected response:", result);
+        }
+
+    } catch (err) {
+
+        console.error("ASK ERROR:", err);
+
+        alert(
+            "Could not connect to the server. Check the Docker terminal."
+        );
     }
 
 });
