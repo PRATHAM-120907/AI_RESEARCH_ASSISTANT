@@ -10,7 +10,6 @@ COPY . .
 
 RUN mkdir -p uploads
 
-EXPOSE 5000
+EXPOSE 10000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
-
+CMD ["sh", "-c", "gunicorn --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:${PORT:-10000} app:app"]
