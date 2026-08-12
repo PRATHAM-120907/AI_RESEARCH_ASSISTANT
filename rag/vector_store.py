@@ -28,8 +28,8 @@ def create_vector_store(chunks, embedding_model):
 
     client = get_qdrant_client()
 
-    # This project currently supports one active PDF.
-    # Remove the previous PDF's vectors before indexing a new one.
+    
+    
     if client.collection_exists(COLLECTION_NAME):
 
         print("Deleting previous Qdrant collection...")
